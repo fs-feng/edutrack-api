@@ -1,6 +1,7 @@
 package ch.edutrack.api.service
 
 import ch.edutrack.api.dto.CreateUserRequestDTO
+import ch.edutrack.api.dto.UpdateUserRequestDTO
 import ch.edutrack.api.dto.UserResponseDTO
 import ch.edutrack.api.model.RoleEntity
 import ch.edutrack.api.model.UserEntity
@@ -15,6 +16,21 @@ class UserService(
     private val roleRepository: RoleRepository,
     private val passwordEncoder: PasswordEncoder
 ) {
+
+    fun toggleStatus(id: Long): UserResponseDTO {
+        val user = userRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("User not found") }
+
+        user.isActive = !user.isActive
+        return userRepository.save(user).toDTO()
+    }
+
+    fun getById(id: Long): UserResponseDTO {
+        val user = userRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("User not found") }
+        return user.toDTO()
+    }
+
     fun getAll(): List<UserResponseDTO> = userRepository.findAllByIsActiveIsTrue().map { it.toDTO() }
 
     fun create(request: CreateUserRequestDTO): UserResponseDTO {
@@ -31,6 +47,29 @@ class UserService(
             lastName = request.lastName,
             roles = roles as MutableSet<RoleEntity>
         )
+
+        return userRepository.save(user).toDTO()
+    }
+
+    fun update(id: Long, request: UpdateUserRequestDTO): UserResponseDTO {
+        val user = userRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("User not found") }
+
+        val roles = roleRepository.findAllById(request.roleIds).toSet()
+        if (roles.size != request.roleIds.size) {
+            throw IllegalArgumentException("One or more roles not found")
+        }
+
+        user.username = request.username
+        user.email = request.email
+        user.firstName = request.firstName
+        user.lastName = request.lastName
+        user.isActive = request.isActive
+        user.roles = roles as MutableSet<RoleEntity>
+
+        if (!request.password.isNullOrBlank()) {
+            user.password = passwordEncoder.encode(request.password)
+        }
 
         return userRepository.save(user).toDTO()
     }

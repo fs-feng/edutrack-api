@@ -40,7 +40,7 @@ class AuthController (
         )
     }
 
-    @GetMapping("/api/auth/logout")
+    @GetMapping("/api/logout")
     fun logout(response: HttpServletResponse): ResponseEntity<Map<String, String>> {
         response.addHeader(
             "Set-Cookie",
